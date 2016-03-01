@@ -1,3 +1,21 @@
+// This is unpleasent, canvas clicks are not handled well
+// So use this code, it works well on multitouch devices as well.
+function getPosition(e) {
+	if ( e.targetTouches && e.targetTouches.length > 0) {
+		var touch = e.targetTouches[0];
+		var x = touch.pageX  - canvas.offsetLeft;
+		var y = touch.pageY  - canvas.offsetTop;
+		return [x,y];
+	} else {
+		var rect = e.target.getBoundingClientRect();
+		var x = e.offsetX || e.pageX - rect.left - window.scrollX;
+		var y = e.offsetY || e.pageY - rect.top  - window.scrollY;
+		var x = e.pageX  - canvas.offsetLeft;
+		var y = e.pageY  - canvas.offsetTop;
+		return [x,y];
+	}
+}
+
 // canvas + mouse/touch is complicated 
 // I give you this because well the mouse/touch stuff is a total
 // pain to get right. This has some out of context bug too.

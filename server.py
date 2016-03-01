@@ -35,6 +35,9 @@ app.debug = True
 
 allTrackers = {}
 
+def entity_client(entity):
+    return entity.split('x')[0]
+
 class World:
     def __init__(self):
         self.clear()
@@ -47,6 +50,9 @@ class World:
     def set(self, entity, data):
         self.space[entity] = data
 
+        for client in allTrackers:
+            allTrackers[client].append(entity)
+
     def clear(self):
         self.space = dict()
 
@@ -56,9 +62,42 @@ class World:
     def delete(self, entity):
         if entity in self.space:
             del self.space[entity]
-    
+
+        for client in allTrackers:
+            allTrackers[client].append(entity)
+
     def world(self):
         return self.space
+
+    def delta(self, client):
+        if client not in allTrackers:
+            return None
+        tracker = allTrackers[client]
+
+        modified = {}
+        deleted = []
+
+        for entity in tracker:
+            if entity_client(entity) == client:
+                continue
+
+            if entity in self.space:
+                modified[entity] = self.space[entity]
+            else:
+                deleted.append(entity)
+
+        allTrackers[client] = []
+
+        return {'modified': modified, 'deleted': deleted}
+
+    def client_exit(self, client):
+        toDelete = []
+        for entity in self.space:
+            if entity.find(client + 'x') == 0:
+                toDelete.append(entity)
+        for entity in toDelete:
+            self.delete(entity)
+        del allTrackers[client]
 
 # you can test your webservice from the commandline
 # curl -v   -H "Content-Type: appication/json" -X PUT http://127.0.0.1:5000/entity/X -d '{"x":1,"y":1}' 
@@ -100,6 +139,7 @@ def update(entity):
 nextUnique = 1
 @app.route("/unique")
 def get_unique():
+    """Get a unique ID for this client"""
     global nextUnique
     d = {'id': str(nextUnique)}
     allTrackers[str(nextUnique)] = []
@@ -108,11 +148,12 @@ def get_unique():
 
 @app.route("/delta/<client_id>")
 def get_delta(client_id):
-    if client_id not in allTrackers:
+    """Get the changes since we last got the changes"""
+    data = myWorld.delta(client_id)
+    if data is None:
         return Response(json.dumps(dict())), 404
-    data = json.dumps(allTrackers[client_id])
-    allTrackers[client_id] = []
-    return Response(data)
+    else:
+        return Response(json.dumps(data))
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
@@ -136,6 +177,11 @@ def clear():
     """Clear the World"""
     myWorld.clear()
     return Response(json.dumps(myWorld.world()))
+
+@app.route("/exit/<client_id>", methods=['POST'])
+def client_exit(client_id):
+    myWorld.client_exit(client_id)
+    return Response(json.dumps(dict()))
 
 if __name__ == "__main__":
     app.run()

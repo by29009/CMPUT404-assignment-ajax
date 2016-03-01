@@ -1,5 +1,5 @@
-localWorld = [];
-world = {};
+localWorld = []; //at most 100 entities that we've drawn locally
+world = {}; //all the things to draw
 
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
@@ -51,31 +51,11 @@ function drawNextFrame() {
 	drawNext = true;
 }
 
-// This optionally draws the frame, call this if you're not sure if you should update
-// the canvas
+// This optionally draws the frame, call this if you're not sure if you should update the canvas
 function drawFrame() {
 	if (drawNext) {
 		renderFrame();
 		drawNext = false;
-	}
-}
-
-// This is unpleasent, canvas clicks are not handled well
-// So use this code, it works well on multitouch devices as well.
-
-function getPosition(e) {
-	if ( e.targetTouches && e.targetTouches.length > 0) {
-		var touch = e.targetTouches[0];
-		var x = touch.pageX  - canvas.offsetLeft;
-		var y = touch.pageY  - canvas.offsetTop;
-		return [x,y];
-	} else {
-		var rect = e.target.getBoundingClientRect();
-		var x = e.offsetX || e.pageX - rect.left - window.scrollX;
-		var y = e.offsetY || e.pageY - rect.top  - window.scrollY;
-		var x = e.pageX  - canvas.offsetLeft;
-		var y = e.pageY  - canvas.offsetTop;
-		return [x,y];
 	}
 }
 
@@ -105,7 +85,8 @@ function addEntity(entity, data) {
 	//Adjust world
 	world[entity] = data;
 
-	drawNextFrame(); // (but should we?)
+	//signal to re-render
+	drawNextFrame();
 
 	//PUT the entity
 	pushEntity(entity, data);
@@ -124,7 +105,6 @@ function addEntity(entity, data) {
 
 var counter = 1;
 function addEntityWithoutName(data) {
-	//var name = "X"+Math.floor((Math.random()*100)+1);
 	if(clientID === null)
 		return;
 	var name = clientID + "x"+(counter++);
@@ -149,13 +129,16 @@ function pullDelta()
 {
 	$.getJSON("/delta/" + clientID, function(deltas)
 	{
-
+		var changed = false;
+		$.each( deltas.modified, function( entity, data ) {world[entity] = data; changed = true;});
+		$.each( deltas.deleted, function( index, entity ) {delete world[entity]; changed = true;});
+		if(changed)
+			drawNextFrame();
 	});
 }
 
 function update() {
-	//XXX: TODO Get the world from the webservice using a XMLHTTPRequest
-	//pullDelta();
+	pullDelta();
 	drawFrame();
 }
 
