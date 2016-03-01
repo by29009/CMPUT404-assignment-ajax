@@ -1,0 +1,10 @@
+GET from /world
+GET from /unique
+
+PUT to /entity/<>
+- new entity
+
+DELETE to /entity/<>
+- kill entity
+
+GET from /delta

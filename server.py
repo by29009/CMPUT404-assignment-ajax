@@ -33,6 +33,8 @@ app.debug = True
 #    'b':{'x':2, 'y':3}
 # }
 
+allTrackers = {}
+
 class World:
     def __init__(self):
         self.clear()
@@ -50,6 +52,10 @@ class World:
 
     def get(self, entity):
         return self.space.get(entity,dict())
+
+    def delete(self, entity):
+        if entity in self.space:
+            del self.space[entity]
     
     def world(self):
         return self.space
@@ -76,7 +82,7 @@ def hello():
     """Redirect to homepage"""
     return redirect('/static/index.html')
 
-@app.route("/entity/<entity>", methods=['POST','PUT'])
+@app.route("/entity/<entity>", methods=['POST','PUT','DELETE'])
 def update(entity):
     """update the entities via this interface"""
     if request.method == 'PUT':
@@ -87,6 +93,26 @@ def update(entity):
         data = flask_post_json()
         myWorld.set(entity, data)
         return Response(json.dumps(myWorld.get(entity)))
+    elif request.method == 'DELETE':
+        myWorld.delete(entity)
+        return Response(json.dumps(dict()))
+
+nextUnique = 1
+@app.route("/unique")
+def get_unique():
+    global nextUnique
+    d = {'id': str(nextUnique)}
+    allTrackers[str(nextUnique)] = []
+    nextUnique += 1
+    return Response(json.dumps(d))
+
+@app.route("/delta/<client_id>")
+def get_delta(client_id):
+    if client_id not in allTrackers:
+        return Response(json.dumps(dict())), 404
+    data = json.dumps(allTrackers[client_id])
+    allTrackers[client_id] = []
+    return Response(data)
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
