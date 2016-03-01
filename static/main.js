@@ -35,12 +35,36 @@ function clearFrame() {
 
 }
 
+function drawCard(num, x, y, isBig)
+{
+	var img = document.getElementById('img' + num);
+	var w = 34;
+	var h = 50;
+	if(isBig)
+	{
+		w *= 3;
+		h *= 3;
+	}
+	context.drawImage(img, x - w/2, y - h/2, w, h);
+}
+
 // This actually draws the frame
 function renderFrame() {
 	clearFrame();
 	for (var key in world) {
 		var entity = world[key];
-		drawCircle(context,prepEntity(entity));
+		if(entity.etype == 'card')
+		{
+			drawCard(entity.num, entity.x, entity.y, entity.big);
+		}
+		else if(entity.etype == 'down')
+		{
+			var img = document.getElementById("enterImage");
+    		context.drawImage(img, entity.x - 52, entity.y - 52);
+		}
+		else if(entity.etype == 'up')
+		{
+		}
 	}
 }
 
